@@ -38,6 +38,9 @@ curl -X POST http://localhost:3000/api/notes       -H "Authorization: Bearer dev
   }'
 ```
 
+<img width="1911" height="957" alt="image" src="https://github.com/user-attachments/assets/7d34f3ff-a530-40a8-87fb-76f525c95eb3" />
+
+
 List notes:
 ```bash
 curl -H "Authorization: Bearer dev-secret-token" http://localhost:3000/api/notes
