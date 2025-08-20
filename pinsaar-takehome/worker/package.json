@@ -1,0 +1,16 @@
+{
+  "name": "pinsaar-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node src/test-idem.js"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.11",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.5.1",
+    "pino": "^9.0.0"
+  }
+}

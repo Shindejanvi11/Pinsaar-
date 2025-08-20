@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pinsaar Admin</title>
+  <style>
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial; margin:20px; color:#eee; background:#0b0f14;}
+    .card{background:#111824; border:1px solid #223; border-radius:14px; padding:16px; margin-bottom:16px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
+    input,button,select,textarea{background:#0e1420; color:#eee; border:1px solid #334; border-radius:10px; padding:8px; width:100%;}
+    label{font-size:12px; color:#9aa4b2;}
+    table{width:100%; border-collapse: collapse;}
+    th, td{border-bottom:1px solid #223; padding:8px; font-size:14px;}
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+    .muted{color:#9aa4b2; font-size:12px;}
+    .tag{display:inline-block; padding:2px 8px; border-radius:999px; background:#162238; border:1px solid #284065; font-size:12px;}
+  </style>
+</head>
+<body>
+  <h2>📨 Pinsaar Admin</h2>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Admin Token</label>
+        <input id="token" placeholder="Bearer token" value="dev-secret-token"/>
+      </div>
+      <div>
+        <label>Sink URL (webhook)</label>
+        <input id="sinkUrl" placeholder="http://localhost:5000/sink" value="http://localhost:5000/sink"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Create Note</h3>
+    <div class="row">
+      <div><label>Title</label><input id="title" placeholder="Title"/></div>
+      <div><label>Release At (ISO)</label><input id="releaseAt" placeholder="2024-01-01T00:00:00.000Z"/></div>
+    </div>
+    <label>Body</label>
+    <textarea id="body" rows="4" placeholder="Body text"></textarea>
+    <br/><br/>
+    <button onclick="createNote()">Create</button>
+    <div class="muted">Tip: use a past ISO time to deliver immediately.</div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; gap:12px; align-items:center;">
+      <h3 style="margin:0;">Notes</h3>
+      <select id="statusFilter" onchange="loadNotes()">
+        <option value="">All</option>
+        <option>pending</option>
+        <option>processing</option>
+        <option>delivered</option>
+        <option>dead</option>
+      </select>
+      <button onclick="loadNotes()">Refresh</button>
+    </div>
+    <table>
+      <thead><tr><th>Id</th><th>Title</th><th>Status</th><th>Last Code</th><th>Delivered At</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const api = location.origin;
+    async function createNote(){
+      const token = document.getElementById('token').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const body = document.getElementById('body').value.trim();
+      const releaseAt = document.getElementById('releaseAt').value.trim();
+      const webhookUrl = document.getElementById('sinkUrl').value.trim();
+      const res = await fetch(api + '/api/notes', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer ' + token},
+        body: JSON.stringify({ title, body, releaseAt, webhookUrl })
+      });
+      const data = await res.json();
+      alert('Created: ' + JSON.stringify(data));
+      loadNotes();
+    }
+
+    async function loadNotes(){
+      const token = document.getElementById('token').value.trim();
+      const status = document.getElementById('statusFilter').value;
+      const url = api + '/api/notes' + (status ? ('?status='+encodeURIComponent(status)) : '');
+      const res = await fetch(url, { headers:{'Authorization':'Bearer ' + token}});
+      const data = await res.json();
+      const rows = document.getElementById('rows');
+      rows.innerHTML = '';
+      (data.items||[]).forEach(n => {
+        const tr = document.createElement('tr');
+        const last = (n.attempts && n.attempts.length) ? n.attempts[n.attempts.length-1] : null;
+        tr.innerHTML = `
+          <td>${n._id}</td>
+          <td>${n.title}</td>
+          <td><span class="tag">${n.status}</span></td>
+          <td>${last ? (last.statusCode || '-') : '-'}</td>
+          <td>${n.deliveredAt || '-'}</td>
+          <td>${(n.status === 'dead' || n.status === 'failed') ? `<button data-id="${n._id}">Replay</button>` : ''}</td>
+        `;
+        rows.appendChild(tr);
+      });
+      document.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const token = document.getElementById('token').value.trim();
+          const id = btn.getAttribute('data-id');
+          const res = await fetch(api + '/api/notes/' + id + '/replay', { method:'POST', headers:{'Authorization':'Bearer ' + token}});
+          const data = await res.json();
+          alert('Replay: ' + JSON.stringify(data));
+          loadNotes();
+        });
+      });
+    }
+    loadNotes();
+  </script>
+</body>
+</html>
