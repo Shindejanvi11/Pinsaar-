@@ -24,7 +24,7 @@ This repository implements a "drop later" note delivery service with:
 
 ## Run locally (Docker)
 1. Copy `.env.example` to `.env` (optional – compose uses `.env.example` defaults).
-2. `docker compose up --build`
+2. `docker compose up -d --build`
 3. Open API Admin UI: http://localhost:3000 (token required; default `dev-secret-token`)
 
 ## Quick CURLs
